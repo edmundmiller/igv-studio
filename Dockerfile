@@ -1,5 +1,12 @@
 # IGV Web App Studio for Seqera Platform
-FROM public.cr.seqera.io/platform/connect-client:latest
+
+# Add a default Connect client version. Can be overridden by build arg
+ARG CONNECT_CLIENT_VERSION="0.8"
+
+# Seqera base image
+FROM public.cr.seqera.io/platform/connect-client:${CONNECT_CLIENT_VERSION} AS connect
+
+FROM ubuntu:20.04
 
 USER root
 
@@ -38,12 +45,20 @@ RUN chmod +x /usr/local/bin/start.sh \
     && chmod +x /usr/local/bin/discover-data-links.sh \
     && chmod +x /usr/local/bin/generate-igv-config.sh
 
+# Copy connect client from Seqera base image
+COPY --from=connect /usr/bin/connect-client /usr/bin/connect-client
+RUN /usr/bin/connect-client --install
+
 # Remove default nginx configuration and create symlink
 RUN rm -f /etc/nginx/sites-enabled/default \
     && ln -s /etc/nginx/sites-available/igv-app /etc/nginx/sites-enabled/default
 
-# Switch back to connect user
-USER connect
+# Create a non-root user for better security
+RUN useradd -m -s /bin/bash igvuser && \
+    echo "igvuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Switch to connect user
+USER igvuser
 
 # Use connect client as entrypoint with our startup script
 ENTRYPOINT ["/usr/bin/connect-client", "--entrypoint", "/usr/local/bin/start.sh"]
