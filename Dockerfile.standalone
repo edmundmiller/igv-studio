@@ -1,0 +1,57 @@
+# IGV Web App Studio - Standalone Version
+# This version can be built and run independently for testing
+FROM ubuntu:22.04
+
+USER root
+
+# Install nginx, curl, and jq for downloading IGV webapp and processing JSON
+RUN apt-get update && apt-get install -y \
+    nginx \
+    curl \
+    unzip \
+    jq \
+    sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create directories for IGV webapp
+RUN mkdir -p /opt/igv-webapp /etc/nginx/sites-enabled
+
+# Download IGV webapp from GitHub releases
+WORKDIR /tmp
+RUN curl -L -o igv-webapp.zip https://github.com/igvteam/igv-webapp/archive/refs/heads/master.zip \
+    && unzip igv-webapp.zip \
+    && cp -r igv-webapp-master/* /opt/igv-webapp/ \
+    && rm -rf igv-webapp.zip igv-webapp-master
+
+# Copy nginx configuration template
+COPY nginx.conf /etc/nginx/sites-available/igv-app
+
+# Copy data discovery and config generation scripts
+COPY discover-data-links.sh /usr/local/bin/discover-data-links.sh
+COPY generate-igv-config.sh /usr/local/bin/generate-igv-config.sh
+COPY igvwebConfig.template.js /opt/igv-webapp/js/igvwebConfig.template.js
+
+# Copy example user config for documentation
+COPY example-user-config.json /opt/igv-webapp/example-user-config.json
+
+# Create startup script for standalone version
+COPY start.standalone.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh \
+    && chmod +x /usr/local/bin/discover-data-links.sh \
+    && chmod +x /usr/local/bin/generate-igv-config.sh
+
+# Remove default nginx configuration and create symlink
+RUN rm -f /etc/nginx/sites-enabled/default \
+    && ln -s /etc/nginx/sites-available/igv-app /etc/nginx/sites-enabled/default
+
+# Create a non-root user for better security
+RUN useradd -m -s /bin/bash igvuser && \
+    echo "igvuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+USER igvuser
+
+# Expose port for web server
+EXPOSE 8080
+
+# Start the application
+ENTRYPOINT ["/usr/local/bin/start.sh"]
