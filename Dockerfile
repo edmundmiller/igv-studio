@@ -3,11 +3,12 @@ FROM public.cr.seqera.io/platform/connect-client:latest
 
 USER root
 
-# Install nginx and curl for downloading IGV webapp
+# Install nginx, curl, and jq for downloading IGV webapp and processing JSON
 RUN apt-get update && apt-get install -y \
     nginx \
     curl \
     unzip \
+    jq \
     && rm -rf /var/lib/apt/lists/*
 
 # Create directories for IGV webapp
@@ -23,9 +24,19 @@ RUN curl -L -o igv-webapp.zip https://github.com/igvteam/igv-webapp/archive/refs
 # Copy nginx configuration template
 COPY nginx.conf /etc/nginx/sites-available/igv-app
 
+# Copy data discovery and config generation scripts
+COPY discover-data-links.sh /usr/local/bin/discover-data-links.sh
+COPY generate-igv-config.sh /usr/local/bin/generate-igv-config.sh
+COPY igvwebConfig.template.js /opt/igv-webapp/js/igvwebConfig.template.js
+
+# Copy example user config for documentation
+COPY example-user-config.json /opt/igv-webapp/example-user-config.json
+
 # Create startup script that uses dynamic port
 COPY start.sh /usr/local/bin/start.sh
-RUN chmod +x /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh \
+    && chmod +x /usr/local/bin/discover-data-links.sh \
+    && chmod +x /usr/local/bin/generate-igv-config.sh
 
 # Remove default nginx configuration and create symlink
 RUN rm -f /etc/nginx/sites-enabled/default \

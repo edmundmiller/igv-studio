@@ -12,6 +12,17 @@ if [ -z "$CONNECT_TOOL_PORT" ]; then
     exit 1
 fi
 
+# Run Fusion data link discovery and IGV configuration generation
+echo "Discovering Fusion-mounted data links..."
+if [ -d "/workspace/data" ]; then
+    /usr/local/bin/discover-data-links.sh
+    /usr/local/bin/generate-igv-config.sh
+    echo "IGV configuration updated with discovered data"
+else
+    echo "No Fusion data links found, using default configuration"
+    cp /opt/igv-webapp/js/igvwebConfig.template.js /opt/igv-webapp/js/igvwebConfig.js
+fi
+
 # Create nginx configuration with dynamic port
 sed "s/CONNECT_TOOL_PORT_PLACEHOLDER/${CONNECT_TOOL_PORT}/g" /etc/nginx/sites-available/igv-app > /tmp/nginx.conf
 sudo cp /tmp/nginx.conf /etc/nginx/sites-available/igv-app

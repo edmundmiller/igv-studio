@@ -124,6 +124,108 @@ Configure bucket CORS policy:
 gsutil cors set cors-config.json gs://your-bucket-name
 ```
 
+## Fusion Data Link Integration
+
+### Automatic Data Discovery
+
+IGV Studio automatically discovers genomic data files from Seqera Platform Fusion-mounted data links. When you launch a Studio session with data links mounted, the container will:
+
+1. **Scan** `/workspace/data/` for mounted buckets
+2. **Detect** genomic files (BAM, VCF, BED, FASTA, BigWig, etc.)
+3. **Auto-configure** IGV with your data as pre-loaded tracks
+4. **Organize** tracks by data link source for easy navigation
+
+### Supported Auto-Discovery
+
+**File Types Automatically Detected:**
+- **Alignments**: BAM, SAM, CRAM (+ .bai, .csi indices)
+- **Variants**: VCF, VCF.GZ, BCF (+ .tbi, .csi indices)
+- **Annotations**: BED, GFF, GTF, BigBed (+ .tbi indices)
+- **Coverage**: BigWig, Wiggle files
+- **Reference**: FASTA (+ .fai indices)
+- **Segmentation**: SEG files
+- **Mutations**: MAF files
+
+**Index File Detection:**
+The system automatically pairs data files with their indices:
+- `sample.bam` → `sample.bam.bai`
+- `variants.vcf.gz` → `variants.vcf.gz.tbi`
+- `genome.fa` → `genome.fa.fai`
+
+### Custom User Configurations
+
+Users can provide custom IGV configurations by placing a JSON file in their data link bucket. The system looks for these filename patterns:
+
+- `igv-config.json` (recommended)
+- `igvConfig.json`
+- `igv.json`
+- `.igv-config.json`
+- `config/igv.json`
+
+#### Custom Config Example
+
+Place this in your bucket as `igv-config.json`:
+
+```json
+{
+  "tracks": [
+    {
+      "name": "My RNA-seq Data",
+      "url": "/workspace/data/my-project/rnaseq.bw",
+      "type": "wig",
+      "color": "rgb(255, 0, 0)",
+      "height": 150,
+      "min": 0,
+      "max": 100
+    },
+    {
+      "name": "Project Variants",
+      "url": "/workspace/data/my-project/variants.vcf.gz",
+      "indexURL": "/workspace/data/my-project/variants.vcf.gz.tbi",
+      "type": "variant",
+      "displayMode": "EXPANDED"
+    }
+  ],
+  "genomes": [
+    {
+      "id": "my-custom-genome",
+      "name": "My Custom Reference",
+      "fastaURL": "/workspace/data/my-project/reference.fa",
+      "indexURL": "/workspace/data/my-project/reference.fa.fai"
+    }
+  ],
+  "locus": "chr1:1,000,000-2,000,000",
+  "reference": {
+    "id": "my-custom-genome"
+  }
+}
+```
+
+### Data Organization in IGV
+
+**Track Naming:**
+- Auto-discovered tracks: `DataLinkName - FileName`
+- User-defined tracks: Use provided names
+
+**Track Grouping:**
+- Tracks are organized by data link source
+- Each bucket appears as a separate track group
+- User configs can override default organization
+
+**Example Studio View:**
+```
+IGV Browser
+├── biopharmaX-project-a/
+│   ├── Project A - sample1 (alignment)
+│   ├── Project A - variants (variants)
+│   └── Project A - coverage (wig)
+├── reference-genomes/
+│   └── Reference - hg38-custom (genome)
+└── User Defined Tracks/
+    ├── My RNA-seq Data (wig)
+    └── Project Variants (variant)
+```
+
 ## Architecture
 
 ### Container Structure

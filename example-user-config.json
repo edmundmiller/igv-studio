@@ -1,0 +1,47 @@
+{
+  "_comment": "Example user-provided IGV configuration file",
+  "_usage": "Place this file as 'igv-config.json' in your data link bucket to customize IGV",
+  
+  "tracks": [
+    {
+      "name": "My Custom Track",
+      "url": "https://example.com/my-data.bw",
+      "type": "wig",
+      "color": "rgb(255, 0, 0)",
+      "height": 100,
+      "min": 0,
+      "max": 1000
+    },
+    {
+      "name": "Project Variants",
+      "url": "/workspace/data/my-bucket/variants.vcf.gz",
+      "indexURL": "/workspace/data/my-bucket/variants.vcf.gz.tbi",
+      "type": "variant",
+      "displayMode": "EXPANDED"
+    }
+  ],
+  
+  "genomes": [
+    {
+      "id": "custom-genome-v1",
+      "name": "My Custom Genome v1.0",
+      "fastaURL": "/workspace/data/my-bucket/reference/genome.fa",
+      "indexURL": "/workspace/data/my-bucket/reference/genome.fa.fai",
+      "cytobandURL": "/workspace/data/my-bucket/reference/cytobands.txt",
+      "tracks": [
+        {
+          "name": "Gene Annotations",
+          "url": "/workspace/data/my-bucket/annotations/genes.gtf",
+          "type": "annotation",
+          "order": 1000000
+        }
+      ]
+    }
+  ],
+  
+  "locus": "chr1:1,000,000-2,000,000",
+  "showChromosomeWidget": true,
+  "reference": {
+    "id": "custom-genome-v1"
+  }
+}
